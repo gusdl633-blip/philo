@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Philo — 오늘의 철학</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500&family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111111;
+    --bg-card: #1C1C1C;
+    --bg-ele: #252525;
+    --border: #2A2A2A;
+    --border-h: #3A3A3A;
+    --accent: #D9FF9A;
+    --accent-dim: rgba(217,255,154,0.1);
+    --accent-border: rgba(217,255,154,0.28);
+    --accent-text: #111;
+    --t1: #F0F0F0;
+    --t2: #888888;
+    --t3: #444444;
+    --ff: 'Noto Sans KR', sans-serif;
+    --fs: 'Noto Serif KR', serif;
+    --r-md: 10px;
+    --r-lg: 16px;
+    --r-pill: 100px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0a0a0a;
+    font-family: var(--ff);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px 48px;
+  }
+
+  /* ── phone shell ── */
+  .phone {
+    width: 390px;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 0.5px #2a2a2a, 0 40px 120px rgba(0,0,0,0.8);
+  }
+  .notch {
+    width: 126px; height: 34px;
+    background: #0a0a0a;
+    border-radius: 0 0 20px 20px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+  }
+
+  /* ── orb bg ── */
+  .orbs {
+    position: absolute; top: 0; left: 0; right: 0; height: 260px;
+    pointer-events: none; overflow: hidden; z-index: 0;
+  }
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(55px);
+  }
+  .orb1 {
+    width: 220px; height: 220px; top: -70px; left: -50px;
+    background: radial-gradient(circle, rgba(74,124,89,0.55), transparent 70%);
+  }
+  .orb2 {
+    width: 180px; height: 180px; top: -50px; right: -30px;
+    background: radial-gradient(circle, rgba(143,184,74,0.38), transparent 70%);
+  }
+  .orb3 {
+    width: 140px; height: 140px; top: 80px; left: 50%;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(217,255,154,0.1), transparent 70%);
+  }
+
+  /* ── inner scroll ── */
+  .scroll-area {
+    position: relative; z-index: 1;
+    max-height: 820px;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* ── screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── header ── */
+  .hdr {
+    padding: 16px 20px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo-row { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 32px; height: 32px;
+    background: var(--bg-ele);
+    border: 0.5px solid var(--border-h);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--fs); font-size: 15px; font-weight: 300;
+    color: var(--accent);
+  }
+  .aname { font-size: 14px; font-weight: 500; color: var(--t1); letter-spacing: -0.2px; }
+  .asub { font-size: 10px; color: var(--t3); margin-top: 1px; letter-spacing: 0.3px; }
+  .streak {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(217,255,154,0.1);
+    border: 0.5px solid var(--accent-border);
+    color: var(--accent);
+    font-size: 11px; font-weight: 500;
+    padding: 4px 11px; border-radius: var(--r-pill);
+  }
+
+  /* ── main content ── */
+  .body { padding: 2px 16px 28px; display: flex; flex-direction: column; gap: 11px; }
+
+  .date-row { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+  .date-txt { font-size: 11px; color: var(--t3); letter-spacing: 0.3px; }
+  .cat-pill {
+    font-size: 10px; font-weight: 500;
+    padding: 3px 11px; border-radius: var(--r-pill);
+    background: var(--accent-dim); color: var(--accent);
+    border: 0.5px solid var(--accent-border);
+    letter-spacing: 0.3px;
+  }
+
+  /* passage card */
+  .passage-card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 20px 18px 18px;
+    transition: border-color 0.2s;
+  }
+  .passage-card:hover { border-color: var(--border-h); }
+  .book-row { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+  .book-ico {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--bg-ele); border: 0.5px solid var(--border-h);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .book-title { font-size: 11px; font-weight: 500; color: var(--t1); }
+  .book-author { font-size: 10px; color: var(--t3); margin-top: 2px; letter-spacing: 0.2px; }
+  .passage-text {
+    font-family: var(--fs);
+    font-size: 13.5px; font-weight: 400; line-height: 2.05;
+    color: var(--t1); word-break: keep-all;
+    border-left: 2px solid rgba(217,255,154,0.35);
+    padding-left: 14px; border-radius: 0;
+  }
+
+  /* context box */
+  .ctx-box {
+    background: var(--bg-card);
+    border: 0.5px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+  }
+  .slbl {
+    font-size: 9px; font-weight: 500;
+    color: #666666; letter-spacing: 0.8px;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .ctx-text { font-size: 12px; line-height: 1.85; color: #AAAAAA; word-break: keep-all; }
+
+  /* keywords */
+  .kw-row { display: flex; gap: 5px; flex-wrap: wrap; padding: 0 2px; }
+  .kw {
+    font-size: 10px; font-weight: 500;
+    padding: 3px 10px; border-radius: var(--r-pill);
+    background: var(--bg-ele); color: var(--t2);
+    border: 0.5px solid var(--border-h);
+    letter-spacing: 0.2px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .kw:hover { border-color: var(--accent-border); color: var(--accent); }
+
+  /* action buttons */
+  .act-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .abtn {
+    padding: 11px; border: 0.5px solid var(--border-h);
+    border-radius: var(--r-md); background: transparent;
+    font-family: var(--ff); font-size: 11px; font-weight: 500;
+    color: var(--t2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.15s; letter-spacing: 0.2px;
+  }
+  .abtn:hover { border-color: var(--accent-border); color: var(--accent); background: var(--accent-dim); }
+  .abtn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .abtn.saved { border-color: var(--accent-border); color: var(--accent); background: var(--accent-dim); }
+
+  /* shuffle CTA */
+  .shuffle-btn {
+    width: 100%; padding: 13px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    font-family: var(--ff); font-size: 12px; font-weight: 500;
+    color: var(--accent-text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: none; transition: opacity 0.15s, transform 0.1s;
+  }
+  .shuffle-btn:hover { opacity: 0.9; }
+  .shuffle-btn:active { transform: scale(0.98); }
+  .shuffle-btn svg { width: 14px; height: 14px; stroke: var(--accent-text); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* divider */
+  .divider { border: none; border-top: 0.5px solid var(--border); }
+  .sec-hdr { font-size: 11px; font-weight: 500; color: #AAAAAA; padding: 0 2px; }
+
+  /* cat cards */
+  .cgrid { display: flex; flex-direction: column; gap: 8px; }
+  .ccard {
+    background: var(--bg-card); border: 0.5px solid var(--border);
+    border-radius: var(--r-lg); overflow: hidden; cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .ccard:hover { border-color: var(--border-h); }
+  .chdr { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .cleft { display: flex; align-items: center; gap: 9px; }
+  .cicon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--bg-ele); border: 0.5px solid var(--border-h);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .ctitle { font-size: 13px; font-weight: 500; color: #F0F0F0; }
+  .csub { font-size: 10px; color: #777777; margin-top: 2px; }
+  .carr { font-size: 18px; color: #666666; transition: color 0.15s; }
+  .ccard:hover .carr { color: #AAAAAA; }
+  .cpills { padding: 0 14px 12px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .cpill {
+    font-size: 10px; padding: 3px 9px;
+    border-radius: var(--r-pill);
+    border: 0.5px solid #3A3A3A;
+    color: #AAAAAA; background: #252525;
+    white-space: nowrap;
+  }
+
+  /* ── detail screen ── */
+  .det-body { padding: 14px 16px 28px; display: flex; flex-direction: column; gap: 10px; }
+  .backbtn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none;
+    font-family: var(--ff); font-size: 12px;
+    color: var(--t2); cursor: pointer;
+    padding: 0; transition: color 0.12s; letter-spacing: 0.2px;
+  }
+  .backbtn:hover { color: var(--accent); }
+  .backbtn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .dhdr {
+    border-radius: var(--r-lg); padding: 14px;
+    display: flex; align-items: center; gap: 11px;
+    background: var(--bg-card); border: 0.5px solid var(--border);
+  }
+  .dico {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: var(--bg-ele); border: 0.5px solid var(--border-h);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .dtitle { font-size: 15px; font-weight: 500; color: #F0F0F0; }
+  .dsub { font-size: 10px; color: #888888; margin-top: 3px; line-height: 1.5; }
+
+  .bcard {
+    background: var(--bg-card); border: 0.5px solid var(--border);
+    border-radius: var(--r-lg); padding: 13px 14px;
+    transition: border-color 0.15s;
+  }
+  .bcard:hover { border-color: var(--border-h); }
+  .btop { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+  .bico2 {
+    width: 32px; height: 32px; border-radius: 7px;
+    background: var(--bg-ele); border: 0.5px solid var(--border-h);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .bname { font-size: 12px; font-weight: 500; color: #F0F0F0; }
+  .bauth { font-size: 10px; color: #777777; margin-top: 1px; }
+  .bpassage {
+    font-family: var(--fs); font-size: 11px; line-height: 1.85;
+    color: var(--t2); word-break: keep-all;
+    border-left: 2px solid rgba(217,255,154,0.25);
+    padding-left: 10px; border-radius: 0;
+  }
+  .rbtn {
+    margin-top: 10px; width: 100%; padding: 9px;
+    border: 0.5px solid var(--border-h); border-radius: var(--r-md);
+    background: transparent; font-family: var(--ff);
+    font-size: 11px; font-weight: 500; color: var(--t2);
+    cursor: pointer; transition: all 0.15s; letter-spacing: 0.2px;
+  }
+  .rbtn:hover { border-color: var(--accent-border); color: var(--accent); background: var(--accent-dim); }
+
+  /* fade animation */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade { animation: fadeUp 0.25s ease forwards; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="scroll-area">
+
+    <!-- ── MAIN SCREEN ── -->
+    <div class="screen active" id="scr-main">
+      <div class="hdr">
+        <div class="logo-row">
+          <div class="logo">◈</div>
+          <div><div class="aname">Philo</div><div class="asub">오늘의 철학</div></div>
+        </div>
+        <div class="streak">🔥 7일 연속</div>
+      </div>
+
+      <div class="body">
+        <div class="date-row">
+          <div class="date-txt" id="today-date"></div>
+          <div class="cat-pill" id="today-cat"></div>
+        </div>
+
+        <div class="passage-card">
+          <div class="book-row">
+            <div class="book-ico" id="today-ico"></div>
+            <div>
+              <div class="book-title" id="today-book"></div>
+              <div class="book-author" id="today-author"></div>
+            </div>
+          </div>
+          <div class="passage-text" id="today-passage"></div>
+        </div>
+
+        <div class="ctx-box">
+          <div class="slbl">이 문구에 대해</div>
+          <div class="ctx-text" id="today-ctx"></div>
+        </div>
+
+        <div class="kw-row" id="today-kw"></div>
+
+        <div class="act-row">
+          <button class="abtn" id="save-btn" onclick="toggleSave()">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span id="save-lbl">저장하기</span>
+          </button>
+          <button class="abtn" onclick="deepDive()">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            더 알아보기
+          </button>
+        </div>
+
+        <button class="shuffle-btn" onclick="shufflePassage()">
+          <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          다른 문구 보기
+        </button>
+
+        <hr class="divider">
+        <div class="sec-hdr">카테고리</div>
+        <div class="cgrid" id="cgrid"></div>
+      </div>
+    </div>
+
+    <!-- ── DETAIL SCREEN ── -->
+    <div class="screen" id="scr-detail">
+      <div class="hdr">
+        <div class="logo-row">
+          <div class="logo">◈</div>
+          <div><div class="aname">Philo</div><div class="asub">오늘의 철학</div></div>
+        </div>
+        <div class="streak">🔥 7일 연속</div>
+      </div>
+      <div class="det-body">
+        <button class="backbtn" onclick="goBack()">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          전체 카테고리
+        </button>
+        <div class="dhdr" id="dhdr"></div>
+        <div id="plist" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const cats = [
+  { id:'sad', icon:'🌧', title:'우울할 땐', sub:'무기력·슬픔·공허함이 찾아올 때', books:[
+    { book:'니체의 말', author:'프리드리히 니체', ico:'⚡', cat:'우울할 땐',
+      passage:'인간은 극복되어야 할 무언가다. 그대들은 벌레에서 인간이 되기까지 무엇을 해왔는가? 많은 것들이 그대들 안에서 여전히 벌레다. 한때 그대들은 원숭이였고, 지금도 인간은 어느 원숭이보다 더 원숭이 같다. 보라, 나는 그대들에게 위버멘쉬를 가르친다.',
+      ctx:'《차라투스트라는 이렇게 말했다》 서문. 니체는 우울과 무기력을 현 상태로 직시하면서도, 그것이 끝이 아닌 출발점임을 선언한다. 지금의 고통은 더 나은 존재로 나아가는 과정이다.',
+      kw:['위버멘쉬','극복','변화','고통'] },
+    { book:'페스트', author:'알베르 카뮈', ico:'🌊', cat:'우울할 땐',
+      passage:'부조리한 세계에 맞서 저항하는 것. 패배할 것을 알면서도 싸우는 것. 영웅이 되는 것이 아니라, 단지 인간이 되는 것. 그것만으로도 충분하다.',
+      ctx:'카뮈는 거창한 해결 대신 오늘 하루 버티는 것, 그것이 이미 충분한 용기임을 말한다.',
+      kw:['부조리','연대','저항','인간'] },
+    { book:'죽음의 수용소에서', author:'빅터 프랭클', ico:'✦', cat:'우울할 땐',
+      passage:'모든 것을 빼앗길 수 있다. 인간의 마지막 자유, 즉 주어진 환경에서 자신의 태도를 선택하고 자신의 길을 선택하는 자유만 빼고는. 고통에도 의미가 있다면, 그것은 더 이상 고통이 아니다.',
+      ctx:'아우슈비츠 생존자 프랭클의 기록. 가장 극한의 상황에서도 인간은 태도를 선택할 수 있다는 통찰은, 우울의 한가운데서도 작은 선택의 여지가 있음을 상기시킨다.',
+      kw:['의미','자유','태도','로고테라피'] },
+    { book:'의지와 표상으로서의 세계', author:'쇼펜하우어', ico:'🪞', cat:'우울할 땐',
+      passage:'삶은 고통이다. 존재 자체가 결핍이며, 욕망은 채워지면 곧 권태가 된다. 그러나 이 진실을 정면으로 응시하는 자는, 더 이상 세상에 속지 않는다. 인식이 곧 해방의 시작이다.',
+      ctx:'고통을 부정하지 않고 직시할 때 오히려 연민과 예술 속에서 일시적 해방을 찾을 수 있다는 역설적 위로다.',
+      kw:['고통','의지','인식','해방'] },
+    { book:'육조단경', author:'혜능', ico:'☯', cat:'우울할 땐',
+      passage:'본래 한 물건도 없는데 어디에 먼지가 앉으랴. 마음이 곧 부처요, 부처가 곧 마음이다. 마음 밖에서 부처를 찾지 말라. 미혹하면 중생이요, 깨치면 부처다.',
+      ctx:'선종 6조 혜능의 핵심 가르침. 우울과 괴로움은 실체가 없는 마음의 먼지임을 직시하는 순간 힘을 잃는다.',
+      kw:['선종','공','본성','마음'] }
+  ]},
+  { id:'anxious', icon:'🌀', title:'불안할 땐', sub:'두려움·걱정·미래가 막막할 때', books:[
+    { book:'명상록', author:'마르쿠스 아우렐리우스', ico:'🏛', cat:'불안할 땐',
+      passage:'네가 잠에서 깨어나기 어렵다고 느낄 때 이렇게 생각하라. 나는 인간으로서 해야 할 일을 하기 위해 일어나는 것이다. 그 일을 위해 내가 태어났고, 그 일을 위해 세상에 왔다. 현재 이 순간에 집중하라. 과거는 이미 없고, 미래는 아직 없다.',
+      ctx:'황제이자 스토아 철학자였던 아우렐리우스가 전쟁터에서 스스로를 다독이며 쓴 일기. 불안의 대부분은 아직 오지 않은 미래에 대한 것이다. 지금에 머무는 것이 가장 강력한 불안 처방이다.',
+      kw:['현재','스토아','명상','자기절제'] },
+    { book:'엥케이리디온', author:'에픽테토스', ico:'⊕', cat:'불안할 땐',
+      passage:'인간을 불안하게 만드는 것은 사건 자체가 아니라, 그 사건에 대한 우리의 판단이다. 우리에게 달린 것과 달리지 않은 것을 구별하라. 달리지 않은 것에 대해서는 "그것은 내 것이 아니다"라고 말하는 법을 배워라.',
+      ctx:'노예 출신 철학자 에픽테토스의 핵심 가르침. 불안의 뿌리는 통제할 수 없는 것을 통제하려는 집착에 있다.',
+      kw:['통제','판단','자유','스토아'] },
+    { book:'불안의 개념', author:'키르케고르', ico:'🌿', cat:'불안할 땐',
+      passage:'불안은 자유의 현기증이다. 선택 앞에서 인간은 무한한 가능성과 마주한다. 그 가능성의 심연을 내려다볼 때 느끼는 어지러움, 그것이 불안이다. 불안 없이는 자유도 없다.',
+      ctx:'키르케고르는 불안을 병으로 보지 않았다. 선택할 수 있는 존재라는 증거, 그것이 불안이다. 불안이 찾아올 때 그것은 내가 아직 살아있고 자유롭다는 신호다.',
+      kw:['자유','선택','실존','가능성'] },
+    { book:'도덕경', author:'노자', ico:'☁', cat:'불안할 땐',
+      passage:'위학일익 위도일손(爲學日益 爲道日損). 배움은 날마다 더하는 것이고, 도를 닦음은 날마다 덜어내는 것이다. 덜고 또 덜어내어 무위(無爲)에 이르면, 하지 않음이 없게 된다. 물처럼 낮은 곳에 처하라.',
+      ctx:'노자는 불안의 원인을 과도한 욕심과 통제 욕구에서 찾았다. 덜어내고 낮아질수록 오히려 단단해진다는 역설이다.',
+      kw:['무위','도','덜어냄','유연함'] },
+    { book:'화엄경 강의', author:'틱낫한', ico:'🪷', cat:'불안할 땐',
+      passage:'지금 이 순간, 이미 충분하다. 미래는 아직 오지 않았고 과거는 이미 지나갔다. 호흡 하나가 기적이다. 발이 땅에 닿는 이 감각이 기적이다. 지금 여기 존재하는 것, 그것이 가장 위대한 일이다.',
+      ctx:'베트남 선승 틱낫한의 마음챙김 가르침. 불안은 항상 지금이 아닌 시간대에 산다. 한 번의 깊은 호흡으로 지금으로 돌아오는 것, 그것이 가장 단순하고 강력한 처방이다.',
+      kw:['마음챙김','현재','호흡','평화'] }
+  ]},
+  { id:'lost', icon:'🧭', title:'길을 잃었을 땐', sub:'방향·정체성·선택의 기로에서', books:[
+    { book:'소크라테스의 변론', author:'플라톤 저', ico:'⚗', cat:'길을 잃었을 땐',
+      passage:'검토되지 않은 삶은 살 가치가 없다. 나는 죽음을 두려워하지 않는다. 내가 두려워하는 것은 오직 하나, 불의를 저지르는 것이다. 나는 신의 명령에 따라 이 도시에서 철학을 계속할 것이다.',
+      ctx:'사형 선고를 받은 소크라테스의 마지막 변론. 불편한 질문이야말로 방향을 찾는 첫걸음이다. 길을 잃은 것은 아직 자신에게 솔직한 질문을 던지지 않았기 때문일 수 있다.',
+      kw:['자기인식','진리','용기','질문'] },
+    { book:'장자', author:'장자', ico:'🦋', cat:'길을 잃었을 땐',
+      passage:'옛날에 장주가 꿈에 나비가 되었다. 훨훨 나는 나비였다. 스스로 매우 기분이 좋아서 자기가 장주인 것을 알지 못했다. 문득 깨어나니 틀림없는 장주였다. 장주가 꿈에 나비가 된 것인지, 나비가 꿈에 장주가 된 것인지 알 수가 없다.',
+      ctx:'장자의 호접몽. 나는 고정된 존재가 아니라 끊임없이 변화하는 흐름 속에 있다. 길을 잃은 것은 하나의 정체성에 집착하기 때문일 수 있다.',
+      kw:['정체성','변화','꿈','자유'] },
+    { book:'인간의 조건', author:'한나 아렌트', ico:'✧', cat:'길을 잃었을 땐',
+      passage:'행위란 인간이 서로의 존재를 드러내는 유일한 방법이다. 말하고 행동함으로써 우리는 세계에 자신을 삽입한다. 이 삽입은 탄생과 같다. 새로운 시작을 만드는 능력, 그것이 인간의 본질이다.',
+      ctx:'아렌트는 인간의 본질을 행위와 말하기에서 찾았다. 방향을 잃었을 때 완벽한 준비를 기다리지 말고, 작은 행동으로 세계에 자신을 드러내는 것이 새 출발이 된다.',
+      kw:['행위','탄생성','공론장','시작'] },
+    { book:'제2의 성', author:'보부아르', ico:'◇', cat:'길을 잃었을 땐',
+      passage:'인간은 자유롭도록 저주받았다. 아니, 정확히는 선택하도록 저주받았다. 선택하지 않는 것도 하나의 선택이다. 스스로 삶을 기획하지 않으면, 그 기획은 타인에 의해 이루어진다.',
+      ctx:'보부아르는 실존주의를 삶에 적용했다. 길을 잃은 것은 타인이 만들어놓은 지도를 따르고 있었기 때문일 수 있다. 나만의 지도를 그리는 것이 바로 지금부터다.',
+      kw:['선택','자유','실존','기획'] },
+    { book:'전습록', author:'왕양명', ico:'🌄', cat:'길을 잃었을 땐',
+      passage:'알고도 행하지 않는 것은 아직 알지 못한 것이다. 앎과 행함은 하나다. 성인의 학문은 마음 하나를 구하는 것뿐이다. 마음 밖에 이치가 없고, 마음 밖에 일이 없다.',
+      ctx:'왕양명의 지행합일(知行合一). 방향을 찾겠다며 계속 생각만 하는 것은 아직 모르는 것이다. 작은 행동이 곧 앎이고, 그 행동 속에서 방향이 만들어진다.',
+      kw:['지행합일','행동','양지','마음'] }
+  ]},
+  { id:'angry', icon:'🔥', title:'분노할 땐', sub:'부당함·좌절·억울함을 느낄 때', books:[
+    { book:'에티카', author:'스피노자', ico:'🔬', cat:'분노할 땐',
+      passage:'분노는 우리가 미워하는 자에게 해악을 끼치려는 욕망과 결합된 증오다. 그러나 증오에는 결코 선이 없다. 분노와 증오에 의해 사는 자는 비참하게 산다. 이해하는 자는 분노하지 않는다.',
+      ctx:'스피노자는 감정을 억압하지 않고 이해할 것을 권했다. 분노의 원인을 들여다볼 때 그것은 더 이상 우리를 지배하지 못한다. 이해가 곧 자유다.',
+      kw:['감정','이성','이해','자유'] },
+    { book:'화에 대하여', author:'세네카', ico:'🏺', cat:'분노할 땐',
+      passage:'분노는 잠시 미친 상태다. 먼저 자신을 통제하라. 그리고 기다려라. 분노는 스스로 사그라든다. 화가 났을 때 말하지 마라. 그 말들은 나중에 반드시 후회하게 될 것이다.',
+      ctx:'세네카는 분노를 다루는 구체적 처방을 제시했다. 분노가 찾아오면 판단을 유보하고 시간을 두어라. 대부분의 분노는 48시간 뒤 그 크기가 절반 이하로 줄어든다.',
+      kw:['절제','기다림','스토아','후회'] },
+    { book:'맹자', author:'맹자', ico:'🌾', cat:'분노할 땐',
+      passage:'사람이 차마 하지 못하는 마음이 있으니, 이것이 인(仁)의 단서다. 측은히 여기는 마음은 인의 단서요, 부끄러워하는 마음은 의의 단서다. 분노가 정의에서 왔다면 그것은 덕의 씨앗이다.',
+      ctx:'맹자는 분노를 나쁜 것으로 보지 않았다. 부당함에 분노하는 마음은 인간의 선한 본성에서 온다. 다만 그 에너지를 어디로 향하게 할지가 중요하다.',
+      kw:['인의','측은지심','성선설','정의'] },
+    { book:'나에게는 꿈이 있습니다', author:'마르틴 루터 킹', ico:'✊', cat:'분노할 땐',
+      passage:'어둠으로는 어둠을 몰아낼 수 없다. 오직 빛만이 그것을 할 수 있다. 증오로는 증오를 몰아낼 수 없다. 오직 사랑만이 그것을 할 수 있다. 우리는 원수를 사랑해야 한다. 그것이 더 강하기 때문이다.',
+      ctx:'킹 목사는 분노를 사랑으로 정제하는 법을 실천으로 보여줬다. 정당한 분노는 세상을 바꾸는 연료가 될 수 있다. 단, 그 불길이 자신을 태우지 않도록 방향을 잡아야 한다.',
+      kw:['비폭력','사랑','정의','저항'] },
+    { book:'논어', author:'공자', ico:'📜', cat:'분노할 땐',
+      passage:'군자는 화이부동(和而不同)하고, 소인은 동이불화(同而不和)한다. 군자는 다름을 인정하면서도 조화를 이루고, 소인은 같은 척하면서도 불화한다. 분노할 때도 예를 잃지 않는 것이 군자다.',
+      ctx:'공자는 분노 자체를 금하지 않았다. 다만 그 표현이 예(禮)를 지켜야 한다고 했다. 화이부동, 나와 다른 상대를 인정하는 것이 분노를 다스리는 근본이다.',
+      kw:['화이부동','예','군자','조화'] }
+  ]},
+  { id:'love', icon:'💫', title:'사랑할 땐', sub:'관계·그리움·연결을 느낄 때', books:[
+    { book:'향연', author:'플라톤', ico:'🏺', cat:'사랑할 땐',
+      passage:'사랑은 불멸을 향한 욕망이다. 우리는 사랑을 통해 아름다움 자체를 향해 나아간다. 아름다운 육체에서 시작해 모든 아름다운 것들로, 그리고 마침내 아름다움 그 자체에 이른다. 그것이 에로스의 사다리다.',
+      ctx:'플라톤의 향연에서 사랑은 아름다움 자체를 향한 상승 운동이다. 사랑이 우리를 성장시키는 이유다.',
+      kw:['에로스','이데아','향연','상승'] },
+    { book:'사랑의 기술', author:'에리히 프롬', ico:'♡', cat:'사랑할 땐',
+      passage:'사랑은 감정이 아니다. 사랑은 기예다. 기예인 이상, 배워야 하고 연습해야 한다. 대부분의 사람들은 사랑하는 것이 아니라 사랑받는 것을 원한다. 그러나 사랑할 줄 아는 능력이야말로 성숙의 증거다.',
+      ctx:'프롬은 사랑을 수동적 감정이 아닌 능동적 실천으로 봤다. 사랑은 기술이고, 기술은 늘 가르칠 수 있다.',
+      kw:['기예','능동성','성숙','관계'] },
+    { book:'마스나비', author:'루미', ico:'🌹', cat:'사랑할 땐',
+      passage:'갈대는 갈대밭에서 잘려나온 뒤로 울고 있다. 그 그리움의 소리를 들어라. 분리된 자들은 재결합의 때를 노래한다. 사랑이란 그 분리의 아픔 속에서만 드러나는 것이다.',
+      ctx:'루미에게 그리움은 슬픔이 아니라 신성한 연결의 신호다. 그리운 마음이 클수록 그 사랑이 깊다는 증거다.',
+      kw:['그리움','분리','신비주의','연결'] },
+    { book:'중력과 은총', author:'시몬 베유', ico:'✦', cat:'사랑할 땐',
+      passage:'사랑한다는 것은 상대에게 "당신이 존재해서 기쁩니다"라고 말하는 것이다. 창조의 행위처럼, 진정한 사랑은 상대가 있는 그대로 존재하도록 공간을 내어주는 것이다.',
+      ctx:'베유의 주의(attention) 개념. 상대를 있는 그대로 바라보는 순간, 사랑은 집착에서 자유로 바뀐다.',
+      kw:['주의','존재','자유','타자'] },
+    { book:'장자', author:'장자', ico:'🦋', cat:'사랑할 땐',
+      passage:'장자의 아내가 죽자 혜자가 문상을 갔다. 장자는 두 다리를 뻗고 앉아 노래를 부르고 있었다. 혜자가 나무라자 장자가 말했다. 아내는 기운이 모여 태어나고, 이제 다시 기운이 흩어져 사계절의 흐름으로 돌아간 것이오.',
+      ctx:'장자에게 사랑은 집착이 없는 연결이다. 자연의 흐름처럼 오고 가게 둘 때 관계는 오히려 자유로워진다.',
+      kw:['집착','자유','흐름','도'] }
+  ]},
+  { id:'meaning', icon:'✨', title:'의미를 찾을 땐', sub:'삶의 목적·성장·깨달음을 원할 때', books:[
+    { book:'니코마코스 윤리학', author:'아리스토텔레스', ico:'🏛', cat:'의미를 찾을 땐',
+      passage:'행복은 영혼의 덕에 따른 활동이다. 행복은 상태가 아니라 활동이다. 잠자는 사람은 행복할 수 없다. 탁월함을 발휘하며 살아갈 때, 인간은 비로소 목적에 맞게 살고 있는 것이다.',
+      ctx:'아리스토텔레스의 에우다이모니아. 의미는 찾는 것이 아니라 만드는 것이다. 내가 가장 잘 할 수 있는 것을 발휘하며 사는 것, 그것이 좋은 삶의 정의다.',
+      kw:['에우다이모니아','탁월성','활동','덕'] },
+    { book:'실천이성비판', author:'임마누엘 칸트', ico:'⚖', cat:'의미를 찾을 땐',
+      passage:'두 가지가 내 마음을 경이로 채운다. 내 위의 별이 빛나는 하늘과, 내 안의 도덕 법칙이 그것이다. 이 두 가지는 내 존재의 가치를 한없이 높여준다.',
+      ctx:'칸트 《실천이성비판》 결론부. 의미는 거창한 곳에 있지 않다. 밤하늘처럼 이미 주어진 우주의 아름다움과, 내 안에 새겨진 옳고 그름의 감각이 삶의 의미를 만든다.',
+      kw:['도덕법칙','경이','이성','존엄'] },
+    { book:'수상록', author:'몽테뉴', ico:'📖', cat:'의미를 찾을 땐',
+      passage:'나는 가장 평범한 일상의 철학자다. 내 연구 주제는 나 자신이다. 나는 내 삶을 연구한다. 이것이 물리학이나 다른 어떤 학문보다 더 어렵고 더 중요한 주제다.',
+      ctx:'몽테뉴는 자기 자신을 탐구하는 것이 철학의 시작이라 했다. 오늘 하루 나 자신을 정직하게 관찰하는 것이 의미 탐구의 전부다.',
+      kw:['자기탐구','일상','성찰','인간'] },
+    { book:'법구경', author:'석가모니', ico:'☸', cat:'의미를 찾을 땐',
+      passage:'마음이 모든 것에 앞선다. 마음이 주(主)가 되어 모든 것을 만든다. 더럽혀진 마음으로 말하거나 행동하면 괴로움이 따른다. 깨끗한 마음으로 말하거나 행동하면 행복이 그림자처럼 따른다.',
+      ctx:'불교 경전 법구경의 첫 구절. 의미는 외부에서 오지 않는다. 의미 있는 삶을 원한다면 먼저 마음을 다스리는 것이 출발점이다.',
+      kw:['마음','깨달음','업','행복'] },
+    { book:'논어', author:'공자', ico:'📜', cat:'의미를 찾을 땐',
+      passage:'나는 열다섯에 배움에 뜻을 두었고, 서른에 자립했으며, 마흔에 흔들리지 않았고, 쉰에 하늘의 뜻을 알았으며, 예순에 귀가 순해졌고, 일흔에 마음이 하고자 하는 대로 해도 법도를 어기지 않았다.',
+      ctx:'공자의 자기 서사. 의미 있는 삶은 한 번에 완성되지 않는다. 지금 내 나이에 맞는 과업이 곧 의미다.',
+      kw:['성장','수양','자기서사','군자'] }
+  ]}
+];
+
+const allBooks = cats.flatMap(c => c.books);
+let curIdx = 0, saved = false;
+
+function getDate() {
+  const d = new Date();
+  return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일';
+}
+
+function renderPassage(b) {
+  document.getElementById('today-date').textContent = getDate();
+  document.getElementById('today-cat').textContent = b.cat;
+  document.getElementById('today-ico').textContent = b.ico;
+  document.getElementById('today-book').textContent = '《' + b.book + '》';
+  document.getElementById('today-author').textContent = b.author;
+  document.getElementById('today-passage').textContent = b.passage;
+  document.getElementById('today-ctx').textContent = b.ctx;
+  document.getElementById('today-kw').innerHTML = b.kw.map(k => `<span class="kw">#${k}</span>`).join('');
+  saved = false;
+  const btn = document.getElementById('save-btn');
+  btn.classList.remove('saved');
+  document.getElementById('save-lbl').textContent = '저장하기';
+  document.querySelector('.passage-card').classList.add('fade');
+  setTimeout(() => document.querySelector('.passage-card').classList.remove('fade'), 300);
+}
+
+function shufflePassage() {
+  let n = (curIdx + 1 + Math.floor(Math.random() * (allBooks.length - 1))) % allBooks.length;
+  curIdx = n;
+  renderPassage(allBooks[curIdx]);
+  document.querySelector('.scroll-area').scrollTop = 0;
+}
+
+function toggleSave() {
+  saved = !saved;
+  const btn = document.getElementById('save-btn');
+  btn.classList.toggle('saved', saved);
+  document.getElementById('save-lbl').textContent = saved ? '저장됨 ✓' : '저장하기';
+}
+
+function deepDive() {
+  const b = allBooks[curIdx];
+  alert('📖 《' + b.book + '》\n\n' + b.ctx + '\n\n키워드: ' + b.kw.map(k=>'#'+k).join(' '));
+}
+
+function renderCats() {
+  document.getElementById('cgrid').innerHTML = cats.map(c => `
+    <div class="ccard" onclick="openCat('${c.id}')">
+      <div class="chdr">
+        <div class="cleft">
+          <div class="cicon">${c.icon}</div>
+          <div><div class="ctitle">${c.title}</div><div class="csub">${c.sub}</div></div>
+        </div>
+        <div class="carr">›</div>
+      </div>
+      <div class="cpills">${c.books.map(b => `<span class="cpill">《${b.book}》</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function openCat(id) {
+  const c = cats.find(x => x.id === id);
+  document.getElementById('scr-main').classList.remove('active');
+  document.getElementById('scr-detail').classList.add('active');
+  document.querySelector('.scroll-area').scrollTop = 0;
+  document.getElementById('dhdr').innerHTML = `
+    <div class="dico">${c.icon}</div>
+    <div><div class="dtitle">${c.title}</div><div class="dsub">${c.sub} · 책 ${c.books.length}권</div></div>
+  `;
+  document.getElementById('plist').innerHTML = c.books.map(b => `
+    <div class="bcard">
+      <div class="btop">
+        <div class="bico2">${b.ico}</div>
+        <div><div class="bname">《${b.book}》</div><div class="bauth">${b.author}</div></div>
+      </div>
+      <div class="bpassage">${b.passage.slice(0, 60)}...</div>
+      <button class="rbtn" onclick="readBook('${b.book}','${c.id}')">이 문구 읽기 →</button>
+    </div>
+  `).join('');
+}
+
+function goBack() {
+  document.getElementById('scr-detail').classList.remove('active');
+  document.getElementById('scr-main').classList.add('active');
+  document.querySelector('.scroll-area').scrollTop = 0;
+}
+
+function readBook(book, catId) {
+  const c = cats.find(x => x.id === catId);
+  const b = c.books.find(x => x.book === book);
+  if (b) { curIdx = allBooks.indexOf(b); renderPassage(b); goBack(); }
+}
+
+curIdx = Math.floor(Math.random() * allBooks.length);
+renderPassage(allBooks[curIdx]);
+renderCats();
+</script>
+</body>
+</html>
