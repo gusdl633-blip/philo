@@ -133,6 +133,14 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 .tab-dot{width:4px;height:4px;border-radius:50%;background:transparent;margin-top:1px}
 .tab-item.active-tab .tab-dot{background:var(--ink)}
 
+/* ── TEXT SELECTION ── */
+.passage::selection{background:rgba(26,24,20,0.12);color:var(--ink)}
+.passage::-moz-selection{background:rgba(26,24,20,0.12);color:var(--ink)}
+.commentary::selection{background:rgba(26,24,20,0.10);color:var(--ink-2)}
+.commentary::-moz-selection{background:rgba(26,24,20,0.10);color:var(--ink-2)}
+.source-book::selection,.source-author::selection,.source-ref::selection{background:rgba(26,24,20,0.10);color:var(--ink)}
+.source-book::-moz-selection,.source-author::-moz-selection,.source-ref::-moz-selection{background:rgba(26,24,20,0.10);color:var(--ink)}
+
 /* ── ANIM ── */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .fade{animation:fadeIn 0.3s ease forwards}
