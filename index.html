@@ -141,6 +141,24 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 .source-book::selection,.source-author::selection,.source-ref::selection{background:rgba(26,24,20,0.10);color:var(--ink)}
 .source-book::-moz-selection,.source-author::-moz-selection,.source-ref::-moz-selection{background:rgba(26,24,20,0.10);color:var(--ink)}
 
+
+/* ── SHARE / RECOMMEND ── */
+.share-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.share-toast{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);background:var(--ink);color:var(--paper);font-size:12px;padding:10px 14px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;white-space:nowrap}
+.share-toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+.rec-list{display:flex;flex-direction:column;gap:0}
+.rec-item{padding:14px 0;border-top:1px solid var(--line);cursor:pointer;transition:opacity .12s}
+.rec-item:hover,.rec-item:active{opacity:.6}
+.rec-book{font-size:11px;color:var(--ink-4);font-weight:300;margin-bottom:6px;letter-spacing:.2px}
+.rec-passage{font-family:var(--fs);font-size:14px;font-weight:300;line-height:1.75;color:var(--ink-2);word-break:keep-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.capture-card{position:fixed;left:-9999px;top:0;width:720px;background:var(--paper);padding:56px 52px;border:1px solid var(--line);font-family:var(--ff);color:var(--ink)}
+.capture-logo{font-family:var(--fs);font-size:28px;font-weight:500;margin-bottom:34px}
+.capture-book{font-family:var(--fs);font-size:18px;font-weight:500;margin-bottom:6px}
+.capture-author{font-size:14px;color:var(--ink-3);margin-bottom:8px}
+.capture-ref{font-size:12px;color:var(--ink-4);font-style:italic;margin-bottom:28px}
+.capture-passage{font-family:var(--fs);font-size:24px;font-weight:300;line-height:1.9;word-break:keep-all;margin-bottom:30px}
+.capture-cat{font-size:13px;color:var(--ink-3);letter-spacing:.4px}
+
 /* ── ANIM ── */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .fade{animation:fadeIn 0.3s ease forwards}
@@ -156,7 +174,7 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
     <div class="screen active" id="scr-main">
       <div class="hdr">
         <div><span class="logo">Philo</span><span class="logo-sub">오늘의 철학</span></div>
-        <span class="hdr-right">7일 연속</span>
+        <span class="hdr-right" id="streak-count">0일 연속</span>
       </div>
       <div class="body">
         <div class="meta-row">
@@ -182,6 +200,13 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
           </button>
           <button class="abtn" onclick="deepDive()">더 알아보기</button>
         </div>
+        <div class="share-row">
+          <button class="abtn" onclick="copyShareText()">텍스트 복사</button>
+          <button class="abtn" onclick="shareAsImage()">이미지 저장</button>
+        </div>
+        <div class="hr-thin"></div>
+        <div class="commentary-label">이런 문구도 있어요</div>
+        <div class="rec-list" id="rec-list"></div>
         <div style="height:14px"></div>
         <button class="shuffle-btn" onclick="shufflePassage()">다른 문구 보기</button>
       </div>
@@ -243,6 +268,8 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
   </div>
 
 </div><!-- /wrap -->
+<div class="share-toast" id="share-toast"></div>
+<div class="capture-card" id="capture-card"></div>
 
 <script>
 const cats = [
@@ -515,8 +542,55 @@ const allP = cats.flatMap(c => c.books.flatMap(b => b.passages.map(pa => ({
 }))));
 
 let cur = 0;
-let savedList = []; // { idx, item }
+let savedList = loadSavedList(); // { idx, item }
 let currentTab = 'home';
+
+const LS_STREAK = 'philo_streak_v1';
+const LS_SAVED = 'philo_saved_v1';
+
+function dateKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function daysBetween(a, b) {
+  const A = new Date(a + 'T00:00:00');
+  const B = new Date(b + 'T00:00:00');
+  return Math.round((B - A) / 86400000);
+}
+
+function loadSavedList() {
+  try {
+    const raw = localStorage.getItem('philo_saved_v1');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter(s => Number.isInteger(s.idx) && allP[s.idx]).map(s => ({ idx: s.idx, item: allP[s.idx] })) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function persistSavedList() {
+  localStorage.setItem(LS_SAVED, JSON.stringify(savedList.map(s => ({ idx: s.idx }))));
+}
+
+function updateStreak() {
+  const today = dateKey();
+  let data = { lastRead: null, count: 0 };
+  try {
+    data = JSON.parse(localStorage.getItem(LS_STREAK)) || data;
+  } catch (e) {}
+
+  if (data.lastRead !== today) {
+    const gap = data.lastRead ? daysBetween(data.lastRead, today) : null;
+    data.count = gap === 1 ? (Number(data.count) || 0) + 1 : 1;
+    data.lastRead = today;
+    localStorage.setItem(LS_STREAK, JSON.stringify(data));
+  }
+
+  document.getElementById('streak-count').textContent = `${data.count || 1}일 연속`;
+}
 
 function getDate() {
   const d = new Date();
@@ -532,6 +606,7 @@ function render(item) {
   document.getElementById('today-passage').textContent = item.p;
   document.getElementById('today-ctx').textContent = item.ctx;
   document.getElementById('today-kw').innerHTML = item.kw.map(k => `<span class="kw">${k}</span>`).join('');
+  renderRecommendations(item);
   syncSaveBtn();
   ['source-block','today-passage'].forEach(id => {
     const el = document.getElementById(id);
@@ -559,6 +634,7 @@ function toggleSave() {
   } else {
     savedList.unshift({ idx: cur, item: allP[cur] });
   }
+  persistSavedList();
   syncSaveBtn();
   updateSavedLabel();
 }
@@ -574,6 +650,125 @@ function deepDive() {
   if (typeof sendPrompt === 'function') {
     sendPrompt('《' + item.book + '》 ' + item.ref + '\n\n"' + item.p.slice(0,60) + '..."\n\n이 문구의 철학적 배경과 현대적 의미를 더 깊이 설명해줘 ↗');
   }
+}
+
+
+function renderRecommendations(item) {
+  const pool = allP
+    .map((p, idx) => ({ ...p, idx }))
+    .filter(p => p.cat === item.cat && p.idx !== cur);
+  const recs = pool.slice(0, 3);
+  const el = document.getElementById('rec-list');
+  if (!el) return;
+  el.innerHTML = recs.map(r => `
+    <div class="rec-item" onclick="selectP(${r.idx})">
+      <div class="rec-book">《${r.book}》 · ${r.author}</div>
+      <div class="rec-passage">${r.p}</div>
+    </div>`).join('');
+}
+
+function getShareText(item = allP[cur]) {
+  return `Philo 오늘의 철학\n\n《${item.book}》 · ${item.author}\n${item.ref}\n\n${item.p}\n\n#${item.cat.replace(/\s/g, '')}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('share-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+async function copyShareText() {
+  const text = getShareText();
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('문구가 복사됐습니다');
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('문구가 복사됐습니다');
+  }
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const chars = [...text];
+  let line = '';
+  for (const ch of chars) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, y);
+      line = ch;
+      y += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, y);
+  return y + lineHeight;
+}
+
+async function shareAsImage() {
+  const item = allP[cur];
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#F5F3EF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#D8D3CB';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(54, 54, canvas.width - 108, canvas.height - 108);
+
+  ctx.fillStyle = '#1A1814';
+  ctx.font = '500 48px serif';
+  ctx.fillText('Philo', 104, 150);
+  ctx.font = '300 24px sans-serif';
+  ctx.fillStyle = '#7A766E';
+  ctx.fillText('오늘의 철학', 238, 150);
+
+  ctx.font = '500 32px serif';
+  ctx.fillStyle = '#1A1814';
+  ctx.fillText(`《${item.book}》`, 104, 245);
+  ctx.font = '300 25px sans-serif';
+  ctx.fillStyle = '#7A766E';
+  ctx.fillText(item.author, 104, 288);
+  ctx.font = 'italic 22px sans-serif';
+  ctx.fillStyle = '#B0AB9F';
+  ctx.fillText(item.ref, 104, 326);
+
+  ctx.font = '300 42px serif';
+  ctx.fillStyle = '#1A1814';
+  const endY = wrapText(ctx, item.p, 104, 430, 872, 76);
+
+  ctx.font = '400 24px sans-serif';
+  ctx.fillStyle = '#7A766E';
+  ctx.fillText(item.cat, 104, Math.min(endY + 70, 1230));
+  ctx.fillStyle = '#B0AB9F';
+  ctx.fillText(dateKey().replaceAll('-', '. '), 104, 1270);
+
+  canvas.toBlob(async blob => {
+    if (!blob) return;
+    const file = new File([blob], 'philo-quote.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Philo 오늘의 철학', text: item.p });
+        showToast('공유했습니다');
+        return;
+      } catch (e) {}
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'philo-quote.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('이미지가 저장됐습니다');
+  }, 'image/png');
 }
 
 /* ── TAB ── */
@@ -679,6 +874,7 @@ function goToSaved(i) {
 
 function deleteSaved(i) {
   savedList.splice(i, 1);
+  persistSavedList();
   updateSavedLabel();
   syncSaveBtn();
   renderSaved();
@@ -686,6 +882,8 @@ function deleteSaved(i) {
 
 /* ── INIT ── */
 cur = Math.floor(Math.random() * allP.length);
+updateStreak();
+updateSavedLabel();
 render(allP[cur]);
 </script>
 </body>
