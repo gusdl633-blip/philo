@@ -12,16 +12,16 @@
 <style>
 @font-face {
   font-family: 'Eulyoo1945';
-  src: url('./Eulyoo1945-Regular.woff2') format('woff2'),
-       url('./Eulyoo1945-Regular.woff') format('woff');
+  src: url('/Eulyoo1945-Regular.woff2') format('woff2'),
+       url('/Eulyoo1945-Regular.woff') format('woff');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Eulyoo1945';
-  src: url('./Eulyoo1945-SemiBold.woff2') format('woff2'),
-       url('./Eulyoo1945-SemiBold.woff') format('woff');
+  src: url('/Eulyoo1945-SemiBold.woff2') format('woff2'),
+       url('/Eulyoo1945-SemiBold.woff') format('woff');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -939,8 +939,8 @@ async function shareAsImage() {
   // 을유1945 폰트를 FontFace API로 명시적 로드 후 완전히 준비될 때까지 대기
   try {
     const [r, s] = await Promise.all([
-      new FontFace('Eulyoo1945', "url('./Eulyoo1945-Regular.woff2') format('woff2')", { weight: '400' }).load(),
-      new FontFace('Eulyoo1945', "url('./Eulyoo1945-SemiBold.woff2') format('woff2')", { weight: '600' }).load()
+      new FontFace('Eulyoo1945', "url('/Eulyoo1945-Regular.woff2') format('woff2')", { weight: '400' }).load(),
+      new FontFace('Eulyoo1945', "url('/Eulyoo1945-SemiBold.woff2') format('woff2')", { weight: '600' }).load()
     ]);
     document.fonts.add(r);
     document.fonts.add(s);
