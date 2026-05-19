@@ -231,7 +231,23 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
         <h1 class="onboard-title">오늘의 철학</h1>
         <div class="onboard-sub">당신의 오늘 마음은 어떤가요?<br>지금의 감정에 맞는 철학 문장을<br>전해드릴게요.</div>
         <div class="onboard-question">지금, 당신의 마음은</div>
-        <div class="emotion-grid" id="emotion-grid"></div>
+        <div class="emotion-grid" id="emotion-grid">
+          <button class="emotion-btn" onclick="selectEmotion('불안')">불안</button>
+          <button class="emotion-btn" onclick="selectEmotion('외로움')">외로움</button>
+          <button class="emotion-btn" onclick="selectEmotion('무기력')">무기력</button>
+          <button class="emotion-btn" onclick="selectEmotion('분노')">분노</button>
+          <button class="emotion-btn" onclick="selectEmotion('상실')">상실</button>
+          <button class="emotion-btn" onclick="selectEmotion('자존감')">자존감</button>
+          <button class="emotion-btn" onclick="selectEmotion('사랑')">사랑</button>
+          <button class="emotion-btn" onclick="selectEmotion('관계')">관계</button>
+          <button class="emotion-btn" onclick="selectEmotion('일과 성취')">일과 성취</button>
+          <button class="emotion-btn" onclick="selectEmotion('돈과 욕망')">돈과 욕망</button>
+          <button class="emotion-btn" onclick="selectEmotion('죽음과 유한성')">죽음과 유한성</button>
+          <button class="emotion-btn" onclick="selectEmotion('자유')">자유</button>
+          <button class="emotion-btn" onclick="selectEmotion('고독')">고독</button>
+          <button class="emotion-btn" onclick="selectEmotion('선택')">선택</button>
+          <button class="emotion-btn" onclick="selectEmotion('삶의 의미')">삶의 의미</button>
+        </div>
         <button class="onboard-cta" onclick="goEmotionResult()">문장 만나러 가기 <span>→</span></button>
         <div class="onboard-note">선택한 감정은 언제든 변경할 수 있어요.</div>
       </div>
@@ -887,12 +903,15 @@ function makeFeaturedPassage(item) {
   const ctx = String(item?.ctx || '').trim();
   let out = base;
 
-  // 첫 화면 결과의 메인 문구는 짧게 자르지 않고 문단형으로 노출한다.
-  // 원문 데이터가 짧은 경우에도 최소 500자 이상 읽히도록 문맥 설명을 이어 붙인다.
-  if (out.length < 500 && ctx) out += '\n\n' + ctx;
+  // 결과 화면의 메인 문구는 문단형을 유지하되 300자 내외로 제한한다.
+  if (out.length < 240 && ctx) out += '\n\n' + ctx;
 
-  const supplement = `이 문장은 ${item?.author || '철학자'}의 문제의식을 오늘의 감정과 연결해 읽도록 구성한 문단이다. 지금 느끼는 감정을 단순히 없애야 할 대상으로 보지 않고, 그 감정이 어디에서 시작됐는지 끝까지 바라보게 만든다. 그래서 이 문장은 위로나 장식보다 판단의 기준에 가깝다. 오늘의 선택, 관계, 욕망, 불안, 상실을 다시 정리하게 하는 짧은 사유의 입구로 읽으면 된다.`;
-  while (out.length < 500) out += '\n\n' + supplement;
+  const limit = 300;
+  if (out.length > limit) {
+    const cut = out.slice(0, limit);
+    const lastStop = Math.max(cut.lastIndexOf('.'), cut.lastIndexOf('다.'), cut.lastIndexOf('요.'), cut.lastIndexOf('!'), cut.lastIndexOf('?'));
+    out = cut.slice(0, lastStop > 180 ? lastStop + 1 : limit).trim();
+  }
 
   return out;
 }
@@ -1289,11 +1308,18 @@ function deleteSaved(i) {
 }
 
 /* ── INIT ── */
-cur = Math.floor(Math.random() * allP.length);
-updateStreak();
-updateSavedLabel();
-renderEmotionGrid();
-render(allP[cur]);
+function initApp() {
+  cur = Math.floor(Math.random() * allP.length);
+  updateStreak();
+  updateSavedLabel();
+  renderEmotionGrid();
+  render(allP[cur]);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 </script>
 </body>
 </html>
