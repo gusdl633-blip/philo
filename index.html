@@ -244,6 +244,39 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 /* 완료 플래시 */
 @keyframes completeFlash{0%{background:rgba(26,24,20,0.06)}100%{background:transparent}}
 .typing-area.complete{animation:completeFlash 0.6s ease-out}
+
+
+/* ── FIRST SCREEN: LARGE DIRECT TYPING MODE ── */
+#main-page-1 .top-nav{padding:28px 28px 18px;border-bottom:0;grid-template-columns:48px 1fr 76px}
+#main-page-1 .top-title{font-size:15px;color:var(--ink-3)}
+#main-page-1 .reset-btn{font-size:11px;text-decoration:none;color:var(--ink-4)}
+#main-page-1 .emotion-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 28px;background:rgba(255,255,255,.18)}
+#main-page-1 .emotion-desc{display:none}
+#main-page-1 .body{padding:30px 28px 20px}
+#main-page-1 .meta-row{font-family:var(--fs);font-size:16px;color:var(--ink-3);margin-bottom:34px}
+#main-page-1 .hr{display:none}
+#main-page-1 .source-block{margin-bottom:30px;line-height:1.75}
+#main-page-1 .source-book{font-size:21px;margin-bottom:8px}
+#main-page-1 .source-author{font-size:15px;color:var(--ink-3)}
+.typing-guide{font-family:var(--ff);font-size:13px;color:var(--ink-4);margin:6px 0 18px;letter-spacing:-.1px}
+.typing-guide::before{content:'✦';font-size:11px;margin-right:8px;color:var(--ink-3)}
+#main-page-1 .typing-wrap{margin:0;min-height:48dvh;padding:0;user-select:none}
+#main-page-1 .typing-ghost,
+#main-page-1 .typing-over{font-family:var(--fs);font-size:32px;font-weight:400;line-height:1.72;letter-spacing:-.7px;word-break:keep-all}
+#main-page-1 .typing-ghost{color:rgba(26,24,20,.17)}
+#main-page-1 .typing-over{color:var(--ink)}
+#main-page-1 .typing-progress-wrap{height:1px;margin:22px 0 0;background:rgba(26,24,20,.12)}
+#main-page-1 .typing-progress-bar{height:1px}
+#main-page-1 .page1-nav{padding:16px 28px 28px;background:rgba(245,243,239,.96);backdrop-filter:blur(10px)}
+#main-page-1 .nav-btn{font-size:13px;color:var(--ink-4)}
+#main-page-1 .nav-skip{color:var(--ink)}
+.t-cursor::after{background:#b49378;width:2px;height:1.05em;margin-left:3px}
+@media (max-width:420px){
+  #main-page-1 .typing-ghost,
+  #main-page-1 .typing-over{font-size:29px;line-height:1.68;letter-spacing:-.6px}
+  #main-page-1 .typing-wrap{min-height:44dvh}
+}
+
 </style>
 </head>
 <body>
@@ -256,11 +289,11 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
     <div class="screen active" id="scr-onboard">
       <div class="onboard">
         <div class="onboard-skip"><button class="text-btn" onclick="skipOnboarding()">건너뛰기</button></div>
-        <h1 class="onboard-title">색즉시공(色卽是空)</h1>
-        <div class="onboard-sub">영원한 감정도, 영원한 순간도 없어요.<br>그래서 오늘은 조금 가벼워져도 괜찮습니다.</div>
+        <h1 class="onboard-title">오늘의 철학 필사</h1>
+        <div class="onboard-sub">지금 기분에 맞는 철학 문장을<br>천천히 따라 입력해보세요.</div>
         <div class="onboard-question">지금 가장 가까운 상태</div>
         <div class="emotion-grid" id="emotion-grid"><button class="emotion-btn" onclick="selectEmotion('불안과 두려움')">불안과 두려움</button><button class="emotion-btn" onclick="selectEmotion('슬픔과 상실')">슬픔과 상실</button><button class="emotion-btn" onclick="selectEmotion('분노와 좌절')">분노와 좌절</button><button class="emotion-btn" onclick="selectEmotion('나와 자존감')">나와 자존감</button><button class="emotion-btn" onclick="selectEmotion('사랑과 관계')">사랑과 관계</button><button class="emotion-btn" onclick="selectEmotion('일과 욕망')">일과 욕망</button><button class="emotion-btn" onclick="selectEmotion('자유와 선택')">자유와 선택</button><button class="emotion-btn" onclick="selectEmotion('고독과 내면')">고독과 내면</button><button class="emotion-btn" onclick="selectEmotion('삶의 의미')">삶의 의미</button></div>
-        <button class="onboard-cta" onclick="goEmotionResult()">문장 만나러 가기 <span>→</span></button>
+        <button class="onboard-cta" onclick="goEmotionResult()">바로 타이핑하기 <span>→</span></button>
         <div class="onboard-note">선택한 감정은 언제든 변경할 수 있어요.</div>
       </div>
     </div>
@@ -282,6 +315,7 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
             <div class="source-book" id="today-book"></div>
             <div class="source-author" id="today-author"></div>
           </div>
+          <div class="typing-guide">화면의 문장을 그대로 따라 입력하세요.</div>
           <!-- 필사 영역: 유령 레이어 + 타이핑 레이어 겹치기 -->
           <div class="typing-wrap" id="typing-area" onclick="focusInput()">
             <!-- 유령 텍스트 (항상 연회색으로 전체 표시) -->
@@ -295,8 +329,8 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
           <textarea class="typing-input" id="typing-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text"></textarea>
         </div>
         <div class="page1-nav">
-          <button class="nav-btn nav-prev" onclick="prevPassage()">← 이전</button>
-          <button class="nav-btn nav-skip" onclick="skipToDetail()">건너뛰기 →</button>
+          <button class="nav-btn nav-prev" onclick="prevPassage()">← 이전 문장</button>
+          <button class="nav-btn nav-skip" onclick="skipToDetail()">해설 보기 →</button>
         </div>
       </div>
       <!-- PAGE 2: 해설 -->
@@ -1508,11 +1542,13 @@ function initTyping(item) {
   inp.value = '';
   inp.oninput = onTypingInput;
   inp.onkeydown = onTypingKeydown;
+  setTimeout(() => focusInput(), 120);
 }
 
 function focusInput() {
   typingActive = true;
-  document.getElementById('typing-input').focus();
+  const input = document.getElementById('typing-input');
+  input.focus({ preventScroll: true });
 }
 
 function onTypingInput(e) {
