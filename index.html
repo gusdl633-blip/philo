@@ -218,11 +218,11 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 .fade{animation:fadeIn 0.3s ease forwards}
 
 /* ── 2페이지 레이아웃 ── */
-.main-page{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.main-page{display:block;min-height:100%;overflow:visible}
 .main-page.hidden{display:none!important}
 .page1-body{flex:1;overflow-y:auto;padding-bottom:12px}
-.page2-body{overflow-y:auto;flex:1;padding-bottom:48px}
-.page1-nav{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:14px 28px 28px;border-top:1px solid var(--line);background:var(--bg)}
+.page2-body{overflow:visible;padding-bottom:48px}
+.page1-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 28px 28px;border-top:1px solid var(--line);background:var(--paper)}
 .nav-btn{font-size:13px;font-weight:400;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:8px 0;letter-spacing:-0.1px;transition:color 0.15s}
 .nav-btn:hover,.nav-skip{color:var(--ink)}
 /* 필사 영역 */
@@ -232,7 +232,7 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 /* 타이핑 레이어: ghost와 동일한 위치/크기에 겹침 */
 .typing-over{position:absolute;top:0;left:0;width:100%;font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;word-break:keep-all;letter-spacing:-0.1px;white-space:pre-wrap;pointer-events:none}
 .t-ok{color:var(--ink)}
-.t-err{color:#c0392b;text-decoration:underline;text-underline-offset:3px}
+.t-err{color:var(--ink);text-decoration:none}
 .t-cursor{display:inline-block;width:0;overflow:visible}
 .t-cursor::after{content:'';display:inline-block;width:2px;height:1.15em;background:var(--ink);margin-left:1px;vertical-align:text-bottom;animation:blink 0.85s step-end infinite;border-radius:1px}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
@@ -347,21 +347,24 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
           </div>
           <div class="passage featured fade" id="today-passage" style="margin:20px 0 24px"></div>
           <div class="hr-thin"></div>
-          <div class="commentary-label">해설</div><div class="commentary" id="today-ctx"></div>
-          <div class="hr-thin"></div>
-          <div class="act-row">
-            <button class="abtn" id="save-btn" onclick="toggleSave()"><span id="save-lbl">저장하기</span></button>
-            <button class="abtn" onclick="copyShareText()">공유</button>
-          </div>
-          <div class="share-row">
-            <button class="abtn" onclick="copyShareText()">텍스트 복사</button>
-            <button class="abtn" onclick="shareAsImage()">이미지 저장</button>
-          </div>
+          <div class="commentary-label">해설</div>
+          <div class="commentary" id="today-ctx"></div>
+
           <div class="hr-thin"></div>
           <div class="commentary-label">철학자 정보</div>
           <div class="philosopher-info" id="today-philosopher"></div>
+
           <div class="hr-thin"></div>
           <div class="kw-row" id="today-kw"></div>
+
+          <div class="hr-thin"></div>
+          <div class="act-row">
+            <button class="abtn" id="save-btn" onclick="toggleSave()"><span id="save-lbl">저장하기</span></button>
+            <button class="abtn" onclick="showPhilosopherMore()">더 알아보기</button>
+            <button class="abtn" onclick="copyShareText()">텍스트 복사</button>
+            <button class="abtn" onclick="shareAsImage()">이미지 저장</button>
+          </div>
+
           <div class="hr-thin"></div>
           <div class="commentary-label">이런 문구도 있어요</div>
           <div class="rec-list" id="rec-list"></div>
@@ -1523,10 +1526,16 @@ function showPage1() {
 function showPage2() {
   document.getElementById('main-page-1').classList.add('hidden');
   document.getElementById('main-page-2').classList.remove('hidden');
-  document.getElementById('main-page-2').querySelector('.body').scrollTop = 0;
+  document.querySelector('.scroll').scrollTop = 0;
 }
 
 function skipToDetail() { showPage2(); }
+
+function showPhilosopherMore() {
+  const item = allP[cur];
+  showToast(`${item.author} · ${item.book}`);
+}
+
 
 // ── 필사 초기화 ──
 function initTyping(item) {
