@@ -226,7 +226,7 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 .nav-btn{font-size:13px;font-weight:400;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:8px 0;letter-spacing:-0.1px;transition:color 0.15s}
 .nav-btn:hover,.nav-skip{color:var(--ink)}
 /* 필사 영역 */
-.typing-wrap{position:relative;cursor:text;margin:24px 0 0;user-select:none}
+.typing-wrap{position:relative;cursor:text;margin:24px 0 0;user-select:none;touch-action:manipulation}
 /* 유령 레이어: 연회색으로 전체 텍스트 항상 표시 */
 .typing-ghost{font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;color:rgba(26,24,20,0.18);word-break:keep-all;letter-spacing:-0.1px;white-space:pre-wrap}
 /* 타이핑 레이어: ghost와 동일한 위치/크기에 겹침 */
@@ -239,8 +239,8 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 /* 진행 바 */
 .typing-progress-wrap{height:2px;background:var(--line);margin:20px 0 0;border-radius:2px;overflow:hidden}
 .typing-progress-bar{height:100%;background:var(--ink);width:0%;transition:width 0.1s linear;border-radius:2px}
-/* 숨겨진 textarea */
-.typing-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0;border:none;padding:0;margin:0}
+/* 실제 입력 textarea: 모바일/PC 한글 IME가 안정적으로 동작하도록 큰 문장 영역 위에 투명하게 올림 */
+.typing-input{position:absolute;inset:0;z-index:5;width:100%;height:100%;min-height:100%;border:0;padding:0;margin:0;resize:none;overflow:hidden;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent;outline:none;box-shadow:none;font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;letter-spacing:-0.1px;word-break:keep-all;white-space:pre-wrap;appearance:none;-webkit-appearance:none;border-radius:0;opacity:.01;pointer-events:auto}
 /* 완료 플래시 */
 @keyframes completeFlash{0%{background:rgba(26,24,20,0.06)}100%{background:transparent}}
 .typing-area.complete{animation:completeFlash 0.6s ease-out}
@@ -263,6 +263,7 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 #main-page-1 .typing-wrap{margin:0;min-height:48dvh;padding:0;user-select:none}
 #main-page-1 .typing-ghost,
 #main-page-1 .typing-over{font-family:var(--fs);font-size:32px;font-weight:400;line-height:1.72;letter-spacing:-.7px;word-break:keep-all}
+#main-page-1 .typing-input{font-family:var(--fs);font-size:32px;font-weight:400;line-height:1.72;letter-spacing:-.7px;word-break:keep-all}
 #main-page-1 .typing-ghost{color:rgba(26,24,20,.17)}
 #main-page-1 .typing-over{color:var(--ink)}
 #main-page-1 .typing-progress-wrap{height:1px;margin:22px 0 0;background:rgba(26,24,20,.12)}
@@ -274,6 +275,7 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 @media (max-width:420px){
   #main-page-1 .typing-ghost,
   #main-page-1 .typing-over{font-size:29px;line-height:1.68;letter-spacing:-.6px}
+  #main-page-1 .typing-input{font-size:29px;line-height:1.68;letter-spacing:-.6px}
   #main-page-1 .typing-wrap{min-height:44dvh}
 }
 
@@ -1493,6 +1495,8 @@ function getEmotionMeta() {
 let typingTarget = '';
 let typingTyped = '';
 let typingActive = false;
+let typingComposing = false;
+let typingCompleted = false;
 
 function render(item) {
   const meta = getEmotionMeta();
@@ -1542,13 +1546,18 @@ function initTyping(item) {
   typingTarget = makeFeaturedPassage(item.p);
   typingTyped = '';
   typingActive = false;
-  // 유령 텍스트 세팅
+  typingComposing = false;
+  typingCompleted = false;
   document.getElementById('typing-ghost').textContent = typingTarget;
   renderTypingOver();
   document.getElementById('typing-progress-bar').style.width = '0%';
   document.getElementById('typing-area').classList.remove('complete');
   const inp = document.getElementById('typing-input');
   inp.value = '';
+  inp.removeEventListener('compositionstart', onTypingCompositionStart);
+  inp.removeEventListener('compositionend', onTypingCompositionEnd);
+  inp.addEventListener('compositionstart', onTypingCompositionStart);
+  inp.addEventListener('compositionend', onTypingCompositionEnd);
   inp.oninput = onTypingInput;
   inp.onkeydown = onTypingKeydown;
   setTimeout(() => focusInput(), 120);
@@ -1557,40 +1566,56 @@ function initTyping(item) {
 function focusInput() {
   typingActive = true;
   const input = document.getElementById('typing-input');
+  if (!input) return;
   input.focus({ preventScroll: true });
 }
 
+function onTypingCompositionStart() {
+  typingComposing = true;
+}
+
+function onTypingCompositionEnd(e) {
+  typingComposing = false;
+  syncTypingFromInput(e.currentTarget);
+}
+
 function onTypingInput(e) {
-  // IME 조합 중에는 무시
-  if (e.isComposing) return;
-  const inp = document.getElementById('typing-input');
-  const val = inp.value;
-  // 붙여넣기 등 여러 글자 한 번에 들어온 경우 마지막 한 글자만 처리
-  const ch = val.slice(-1);
-  inp.value = '';
-  if (!ch) return;
-  handleChar(ch);
+  if (typingComposing || e.isComposing) return;
+  syncTypingFromInput(e.currentTarget);
 }
 
 function onTypingKeydown(e) {
-  if (e.key === 'Backspace') {
-    e.preventDefault();
-    if (typingTyped.length > 0) {
-      typingTyped = typingTyped.slice(0, -1);
-      renderTypingOver();
-      updateProgress();
-    }
+  if (e.key === 'Enter') {
+    // 모바일/PC 모두 문장 필사용 한 줄 흐름을 유지. 줄바꿈은 목표 문장에 없을 때 막는다.
+    if (!typingTarget.includes('\n')) e.preventDefault();
   }
 }
 
-function handleChar(ch) {
-  if (typingTyped.length >= typingTarget.length) return;
-  typingTyped += ch;
+function syncTypingFromInput(inp) {
+  if (!inp || typingCompleted) return;
+  let val = inp.value || '';
+  if (val.length > typingTarget.length) {
+    val = val.slice(0, typingTarget.length);
+    inp.value = val;
+  }
+  typingTyped = val;
   renderTypingOver();
   updateProgress();
-  if (typingTyped.length === typingTarget.length) {
+
+  // 길이가 다 차고 모든 글자가 맞을 때만 완료. 틀린 글자가 있으면 삭제 후 다시 입력 가능.
+  if (typingTyped.length === typingTarget.length && typingTyped === typingTarget) {
     onTypingComplete();
   }
+}
+
+
+function escapeHTML(v) {
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function renderTypingOver() {
@@ -1601,7 +1626,7 @@ function renderTypingOver() {
   for (let i = 0; i < typed.length; i++) {
     const ch = typed[i];
     const ok = typed[i] === target[i];
-    const display = ch === '\n' ? '<br>' : (ch === ' ' ? '&nbsp;' : ch);
+    const display = ch === '\n' ? '<br>' : (ch === ' ' ? '&nbsp;' : escapeHTML(ch));
     h += `<span class="t-${ok ? 'ok' : 'err'}">${display}</span>`;
   }
   // 커서
@@ -1617,6 +1642,8 @@ function updateProgress() {
 }
 
 function onTypingComplete() {
+  if (typingCompleted) return;
+  typingCompleted = true;
   document.getElementById('typing-area').classList.add('complete');
   setTimeout(() => showPage2(), 800);
 }
