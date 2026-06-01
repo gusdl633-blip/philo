@@ -216,6 +216,34 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 /* ── ANIM ── */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .fade{animation:fadeIn 0.3s ease forwards}
+
+/* ── 2페이지 레이아웃 ── */
+.main-page{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.main-page.hidden{display:none!important}
+.page1-body{flex:1;overflow-y:auto;padding-bottom:12px}
+.page2-body{overflow-y:auto;flex:1;padding-bottom:48px}
+.page1-nav{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:14px 28px 28px;border-top:1px solid var(--line);background:var(--bg)}
+.nav-btn{font-size:13px;font-weight:400;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:8px 0;letter-spacing:-0.1px;transition:color 0.15s}
+.nav-btn:hover,.nav-skip{color:var(--ink)}
+/* 필사 영역 */
+.typing-wrap{position:relative;cursor:text;margin:24px 0 0;user-select:none}
+/* 유령 레이어: 연회색으로 전체 텍스트 항상 표시 */
+.typing-ghost{font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;color:rgba(26,24,20,0.18);word-break:keep-all;letter-spacing:-0.1px;white-space:pre-wrap}
+/* 타이핑 레이어: ghost와 동일한 위치/크기에 겹침 */
+.typing-over{position:absolute;top:0;left:0;width:100%;font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;word-break:keep-all;letter-spacing:-0.1px;white-space:pre-wrap;pointer-events:none}
+.t-ok{color:var(--ink)}
+.t-err{color:#c0392b;text-decoration:underline;text-underline-offset:3px}
+.t-cursor{display:inline-block;width:0;overflow:visible}
+.t-cursor::after{content:'';display:inline-block;width:2px;height:1.15em;background:var(--ink);margin-left:1px;vertical-align:text-bottom;animation:blink 0.85s step-end infinite;border-radius:1px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+/* 진행 바 */
+.typing-progress-wrap{height:2px;background:var(--line);margin:20px 0 0;border-radius:2px;overflow:hidden}
+.typing-progress-bar{height:100%;background:var(--ink);width:0%;transition:width 0.1s linear;border-radius:2px}
+/* 숨겨진 textarea */
+.typing-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0;border:none;padding:0;margin:0}
+/* 완료 플래시 */
+@keyframes completeFlash{0%{background:rgba(26,24,20,0.06)}100%{background:transparent}}
+.typing-area.complete{animation:completeFlash 0.6s ease-out}
 </style>
 </head>
 <body>
@@ -239,25 +267,71 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 
     <!-- ── MAIN ── -->
     <div class="screen" id="scr-main">
-      <div class="top-nav">
-        <button class="icon-btn" onclick="showOnboarding()">‹</button>
-        <div class="top-title">오늘의 철학</div>
-        <button class="reset-btn" onclick="showOnboarding()">다시 선택하기</button>
+      <!-- PAGE 1: 필사 타이핑 -->
+      <div class="main-page" id="main-page-1">
+        <div class="top-nav">
+          <button class="icon-btn" onclick="showOnboarding()">‹</button>
+          <div class="top-title">오늘의 철학</div>
+          <button class="reset-btn" onclick="showOnboarding()">다시 선택하기</button>
+        </div>
+        <div class="emotion-strip"><span class="emotion-chip" id="selected-emotion-chip">오늘의 문장</span><span class="emotion-desc" id="selected-emotion-desc">당신의 감정에 맞춘 철학 문장이에요.</span></div>
+        <div class="body page1-body">
+          <div class="meta-row"><span class="meta-date" id="today-date"></span><span class="meta-cat" id="today-cat"></span></div>
+          <div class="hr"></div>
+          <div class="source-block fade" id="source-block">
+            <div class="source-book" id="today-book"></div>
+            <div class="source-author" id="today-author"></div>
+          </div>
+          <!-- 필사 영역: 유령 레이어 + 타이핑 레이어 겹치기 -->
+          <div class="typing-wrap" id="typing-area" onclick="focusInput()">
+            <!-- 유령 텍스트 (항상 연회색으로 전체 표시) -->
+            <div class="typing-ghost" id="typing-ghost"></div>
+            <!-- 타이핑된 글자 레이어 (ghost 위에 absolute 겹침) -->
+            <div class="typing-over" id="typing-over"></div>
+          </div>
+          <div class="typing-progress-wrap">
+            <div class="typing-progress-bar" id="typing-progress-bar"></div>
+          </div>
+          <textarea class="typing-input" id="typing-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text"></textarea>
+        </div>
+        <div class="page1-nav">
+          <button class="nav-btn nav-prev" onclick="prevPassage()">← 이전</button>
+          <button class="nav-btn nav-skip" onclick="skipToDetail()">건너뛰기 →</button>
+        </div>
       </div>
-      <div class="emotion-strip"><span class="emotion-chip" id="selected-emotion-chip">오늘의 문장</span><span class="emotion-desc" id="selected-emotion-desc">당신의 감정에 맞춘 철학 문장이에요.</span></div>
-      <div class="body">
-        <div class="meta-row"><span class="meta-date" id="today-date"></span><span class="meta-cat" id="today-cat"></span></div>
-        <div class="hr"></div>
-        <div class="source-block fade" id="source-block"><div class="source-book" id="today-book"></div><div class="source-author" id="today-author"></div><div class="source-ref" id="today-ref"></div></div>
-        <div class="passage featured fade" id="today-passage"></div>
-        <div class="hr-thin"></div>
-        <div class="commentary-label">해설</div><div class="commentary" id="today-ctx"></div>
-        <div class="hr-thin"></div>
-        <div class="commentary-label">철학자 정보</div><div class="philosopher-info" id="today-philosopher"></div>
-        <div class="hr-thin"></div><div class="kw-row" id="today-kw"></div><div class="hr-thin"></div>
-        <div class="act-row"><button class="abtn" id="save-btn" onclick="toggleSave()"><span id="save-lbl">저장하기</span></button><button class="abtn" onclick="deepDive()">더 알아보기</button></div>
-        <div class="share-row"><button class="abtn" onclick="copyShareText()">텍스트 복사</button><button class="abtn" onclick="shareAsImage()">이미지 저장</button></div>
-        <div class="hr-thin"></div><div class="commentary-label">이런 문구도 있어요</div><div class="rec-list" id="rec-list"></div>
+      <!-- PAGE 2: 해설 -->
+      <div class="main-page hidden" id="main-page-2">
+        <div class="top-nav">
+          <button class="icon-btn" onclick="showPage1()">‹</button>
+          <div class="top-title">해설</div>
+          <span></span>
+        </div>
+        <div class="body page2-body">
+          <div class="source-block" style="margin-top:8px">
+            <div class="source-book" id="detail-book"></div>
+            <div class="source-author" id="detail-author"></div>
+          </div>
+          <div class="passage featured fade" id="today-passage" style="margin:20px 0 24px"></div>
+          <div class="hr-thin"></div>
+          <div class="commentary-label">해설</div><div class="commentary" id="today-ctx"></div>
+          <div class="hr-thin"></div>
+          <div class="act-row">
+            <button class="abtn" id="save-btn" onclick="toggleSave()"><span id="save-lbl">저장하기</span></button>
+            <button class="abtn" onclick="copyShareText()">공유</button>
+          </div>
+          <div class="share-row">
+            <button class="abtn" onclick="copyShareText()">텍스트 복사</button>
+            <button class="abtn" onclick="shareAsImage()">이미지 저장</button>
+          </div>
+          <div class="hr-thin"></div>
+          <div class="commentary-label">철학자 정보</div>
+          <div class="philosopher-info" id="today-philosopher"></div>
+          <div class="hr-thin"></div>
+          <div class="kw-row" id="today-kw"></div>
+          <div class="hr-thin"></div>
+          <div class="commentary-label">이런 문구도 있어요</div>
+          <div class="rec-list" id="rec-list"></div>
+        </div>
       </div>
     </div>
 
@@ -1378,6 +1452,11 @@ function getEmotionMeta() {
   if (!e) return { label:'오늘의 문장', desc:'주제에 맞춘 철학 문장입니다.' };
   return { label:e.label, desc:'주제에 맞춘 철학 문장입니다.' };
 }
+// ── 필사 타이핑 ──
+let typingTarget = '';
+let typingTyped = '';
+let typingActive = false;
+
 function render(item) {
   const meta = getEmotionMeta();
   const chip = document.getElementById('selected-emotion-chip');
@@ -1388,17 +1467,123 @@ function render(item) {
   document.getElementById('today-cat').textContent = item.cat;
   document.getElementById('today-book').textContent = '《' + item.book + '》';
   document.getElementById('today-author').textContent = item.author;
-  document.getElementById('today-ref').textContent = item.ref;
+  document.getElementById('detail-book').textContent = '《' + item.book + '》';
+  document.getElementById('detail-author').textContent = item.author;
   document.getElementById('today-passage').textContent = makeFeaturedPassage(item.p);
   document.getElementById('today-ctx').textContent = item.ctx;
   document.getElementById('today-philosopher').innerHTML = philosopherProfiles[item.author] || `<div class="philosopher-name">${item.author}</div>이 문장의 배경이 되는 사상가입니다. 작품과 문맥을 함께 보면 문장의 의미가 더 선명해집니다.`;
   document.getElementById('today-kw').innerHTML = item.kw.map(k => `<span class="kw">${k}</span>`).join('');
   renderRecommendations(item);
   syncSaveBtn();
-  ['source-block','today-passage'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.remove('fade'); void el.offsetWidth; el.classList.add('fade');
-  });
+  const sb = document.getElementById('source-block');
+  sb.classList.remove('fade'); void sb.offsetWidth; sb.classList.add('fade');
+  showPage1();
+  initTyping(item);
+}
+
+function showPage1() {
+  document.getElementById('main-page-1').classList.remove('hidden');
+  document.getElementById('main-page-2').classList.add('hidden');
+}
+
+function showPage2() {
+  document.getElementById('main-page-1').classList.add('hidden');
+  document.getElementById('main-page-2').classList.remove('hidden');
+  document.getElementById('main-page-2').querySelector('.body').scrollTop = 0;
+}
+
+function skipToDetail() { showPage2(); }
+
+// ── 필사 초기화 ──
+function initTyping(item) {
+  typingTarget = makeFeaturedPassage(item.p);
+  typingTyped = '';
+  typingActive = false;
+  // 유령 텍스트 세팅
+  document.getElementById('typing-ghost').textContent = typingTarget;
+  renderTypingOver();
+  document.getElementById('typing-progress-bar').style.width = '0%';
+  document.getElementById('typing-area').classList.remove('complete');
+  const inp = document.getElementById('typing-input');
+  inp.value = '';
+  inp.oninput = onTypingInput;
+  inp.onkeydown = onTypingKeydown;
+}
+
+function focusInput() {
+  typingActive = true;
+  document.getElementById('typing-input').focus();
+}
+
+function onTypingInput(e) {
+  // IME 조합 중에는 무시
+  if (e.isComposing) return;
+  const inp = document.getElementById('typing-input');
+  const val = inp.value;
+  // 붙여넣기 등 여러 글자 한 번에 들어온 경우 마지막 한 글자만 처리
+  const ch = val.slice(-1);
+  inp.value = '';
+  if (!ch) return;
+  handleChar(ch);
+}
+
+function onTypingKeydown(e) {
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (typingTyped.length > 0) {
+      typingTyped = typingTyped.slice(0, -1);
+      renderTypingOver();
+      updateProgress();
+    }
+  }
+}
+
+function handleChar(ch) {
+  if (typingTyped.length >= typingTarget.length) return;
+  typingTyped += ch;
+  renderTypingOver();
+  updateProgress();
+  if (typingTyped.length === typingTarget.length) {
+    onTypingComplete();
+  }
+}
+
+function renderTypingOver() {
+  const over = document.getElementById('typing-over');
+  const target = typingTarget;
+  const typed = typingTyped;
+  let h = '';
+  for (let i = 0; i < typed.length; i++) {
+    const ch = typed[i];
+    const ok = typed[i] === target[i];
+    const display = ch === '\n' ? '<br>' : (ch === ' ' ? '&nbsp;' : ch);
+    h += `<span class="t-${ok ? 'ok' : 'err'}">${display}</span>`;
+  }
+  // 커서
+  if (typed.length < target.length) {
+    h += '<span class="t-cursor"></span>';
+  }
+  over.innerHTML = h;
+}
+
+function updateProgress() {
+  const pct = typingTarget.length ? (typingTyped.length / typingTarget.length * 100) : 0;
+  document.getElementById('typing-progress-bar').style.width = pct + '%';
+}
+
+function onTypingComplete() {
+  document.getElementById('typing-area').classList.add('complete');
+  setTimeout(() => showPage2(), 800);
+}
+
+function prevPassage() {
+  cur = (cur - 1 + allP.length) % allP.length;
+  render(allP[cur]);
+}
+
+function nextPassage() {
+  cur = (cur + 1) % allP.length;
+  render(allP[cur]);
 }
 
 function syncSaveBtn() {
@@ -1411,7 +1596,6 @@ function shufflePassage() {
   let n = (cur + 1 + Math.floor(Math.random() * (allP.length - 1))) % allP.length;
   cur = n;
   render(allP[cur]);
-  document.querySelector('.scroll').scrollTop = 0;
 }
 
 function toggleSave() {
@@ -1652,7 +1836,7 @@ function showOnboarding() {
 function skipOnboarding() {
   selectedEmotion = ''; keywordQuery = ''; cur = Math.floor(Math.random() * allP.length); render(allP[cur]);
   document.getElementById('app-wrap')?.classList.remove('onboarding');
-  document.getElementById('scr-onboard')?.classList.remove('active'); document.getElementById('scr-main')?.classList.add('active');
+  document.getElementById('scr-onboard')?.classList.remove('active'); document.getElementById('scr-main')?.classList.add('active'); showPage1();
   document.querySelector('.scroll').scrollTop = 0;
 }
 
