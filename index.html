@@ -268,6 +268,11 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 #main-page-1 .typing-over{color:var(--ink)}
 #main-page-1 .typing-progress-wrap{height:1px;margin:22px 0 0;background:rgba(26,24,20,.12)}
 #main-page-1 .typing-progress-bar{height:1px}
+
+.reading-passage{font-family:var(--fs);font-size:26px;font-weight:400;line-height:1.78;letter-spacing:-.6px;color:var(--ink);word-break:keep-all;overflow-wrap:break-word;white-space:pre-wrap;margin:26px 0 34px}
+.reading-note{font-family:var(--ff);font-size:13px;color:var(--ink-4);margin:8px 0 0;letter-spacing:-.1px}
+.reading-note::before{content:'✦';font-size:11px;margin-right:8px;color:var(--ink-3)}
+@media(max-width:480px){.reading-passage{font-size:24px;line-height:1.74;letter-spacing:-.55px;margin-top:24px}}
 #main-page-1 .page1-nav{padding:16px 28px 28px;background:rgba(245,243,239,.96);backdrop-filter:blur(10px)}
 #main-page-1 .nav-btn{font-size:13px;color:var(--ink-4)}
 #main-page-1 .nav-skip{color:var(--ink)}
@@ -291,11 +296,11 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
     <div class="screen active" id="scr-onboard">
       <div class="onboard">
         <div class="onboard-skip"><button class="text-btn" onclick="skipOnboarding()">건너뛰기</button></div>
-        <h1 class="onboard-title">오늘의 철학 필사</h1>
-        <div class="onboard-sub">지금 기분에 맞는 철학 문장을<br>천천히 따라 입력해보세요.</div>
+        <h1 class="onboard-title">오늘의 철학</h1>
+        <div class="onboard-sub">지금 기분에 맞는 철학 문장을<br>천천히 읽어보세요.</div>
         <div class="onboard-question">지금 가장 가까운 상태</div>
         <div class="emotion-grid" id="emotion-grid"><button class="emotion-btn" onclick="selectEmotion('불안과 두려움')">불안과 두려움</button><button class="emotion-btn" onclick="selectEmotion('슬픔과 상실')">슬픔과 상실</button><button class="emotion-btn" onclick="selectEmotion('분노와 좌절')">분노와 좌절</button><button class="emotion-btn" onclick="selectEmotion('나와 자존감')">나와 자존감</button><button class="emotion-btn" onclick="selectEmotion('사랑과 관계')">사랑과 관계</button><button class="emotion-btn" onclick="selectEmotion('일과 욕망')">일과 욕망</button><button class="emotion-btn" onclick="selectEmotion('자유와 선택')">자유와 선택</button><button class="emotion-btn" onclick="selectEmotion('고독과 내면')">고독과 내면</button><button class="emotion-btn" onclick="selectEmotion('삶의 의미')">삶의 의미</button></div>
-        <button class="onboard-cta" onclick="goEmotionResult()">바로 타이핑하기 <span>→</span></button>
+        <button class="onboard-cta" onclick="goEmotionResult()">문장 보기 <span>→</span></button>
         <div class="onboard-note">선택한 감정은 언제든 변경할 수 있어요.</div>
       </div>
     </div>
@@ -317,18 +322,8 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
             <div class="source-book" id="today-book"></div>
             <div class="source-author" id="today-author"></div>
           </div>
-          <div class="typing-guide">화면의 문장을 그대로 따라 입력하세요.</div>
-          <!-- 필사 영역: 유령 레이어 + 타이핑 레이어 겹치기 -->
-          <div class="typing-wrap" id="typing-area" onclick="focusInput()">
-            <!-- 유령 텍스트 (항상 연회색으로 전체 표시) -->
-            <div class="typing-ghost" id="typing-ghost"></div>
-            <!-- 타이핑된 글자 레이어 (ghost 위에 absolute 겹침) -->
-            <div class="typing-over" id="typing-over"></div>
-          </div>
-          <div class="typing-progress-wrap">
-            <div class="typing-progress-bar" id="typing-progress-bar"></div>
-          </div>
-          <textarea class="typing-input" id="typing-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text"></textarea>
+          <div class="reading-note">오늘 당신에게 도착한 철학 문장입니다.</div>
+          <div class="reading-passage fade" id="today-passage-main"></div>
         </div>
         <div class="page1-nav">
           <button class="nav-btn nav-prev" onclick="prevPassage()">← 이전 문장</button>
@@ -1491,7 +1486,7 @@ function getEmotionMeta() {
   if (!e) return { label:'오늘의 문장', desc:'주제에 맞춘 철학 문장입니다.' };
   return { label:e.label, desc:'주제에 맞춘 철학 문장입니다.' };
 }
-// ── 필사 타이핑 ──
+// ── 읽기 모드 ──
 let typingTarget = '';
 let typingTyped = '';
 let typingActive = false;
@@ -1511,6 +1506,8 @@ function render(item) {
   document.getElementById('detail-book').textContent = '《' + item.book + '》';
   document.getElementById('detail-author').textContent = item.author;
   document.getElementById('today-passage').textContent = makeFeaturedPassage(item.p);
+  const mainPassage = document.getElementById('today-passage-main');
+  if (mainPassage) mainPassage.textContent = makeFeaturedPassage(item.p);
   document.getElementById('today-ctx').textContent = item.ctx;
   document.getElementById('today-philosopher').innerHTML = philosopherProfiles[item.author] || `<div class="philosopher-name">${item.author}</div>이 문장의 배경이 되는 사상가입니다. 작품과 문맥을 함께 보면 문장의 의미가 더 선명해집니다.`;
   document.getElementById('today-kw').innerHTML = item.kw.map(k => `<span class="kw">${k}</span>`).join('');
@@ -1519,7 +1516,6 @@ function render(item) {
   const sb = document.getElementById('source-block');
   sb.classList.remove('fade'); void sb.offsetWidth; sb.classList.add('fade');
   showPage1();
-  initTyping(item);
 }
 
 function showPage1() {
