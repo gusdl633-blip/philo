@@ -228,9 +228,9 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 /* 필사 영역 */
 .typing-wrap{position:relative;cursor:text;margin:24px 0 0;user-select:none;touch-action:manipulation}
 /* 유령 레이어: 연회색으로 전체 텍스트 항상 표시 */
-.typing-ghost{font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;color:rgba(26,24,20,0.18);word-break:keep-all;letter-spacing:-0.1px;white-space:pre-wrap}
+.typing-ghost{font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;color:rgba(26,24,20,0.18);word-break:keep-all;overflow-wrap:normal;letter-spacing:-0.1px;white-space:pre-wrap}
 /* 타이핑 레이어: ghost와 동일한 위치/크기에 겹침 */
-.typing-over{position:absolute;top:0;left:0;width:100%;font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;word-break:keep-all;letter-spacing:-0.1px;white-space:pre-wrap;pointer-events:none}
+.typing-over{position:absolute;top:0;left:0;width:100%;font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;word-break:keep-all;overflow-wrap:normal;letter-spacing:-0.1px;white-space:pre-wrap;pointer-events:none}
 .t-ok{color:var(--ink)}
 .t-err{color:var(--ink);text-decoration:none}
 .t-cursor{display:inline-block;width:0;overflow:visible}
@@ -240,7 +240,7 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 .typing-progress-wrap{height:2px;background:var(--line);margin:20px 0 0;border-radius:2px;overflow:hidden}
 .typing-progress-bar{height:100%;background:var(--ink);width:0%;transition:width 0.1s linear;border-radius:2px}
 /* 실제 입력 textarea: 모바일/PC 한글 IME가 안정적으로 동작하도록 큰 문장 영역 위에 투명하게 올림 */
-.typing-input{position:absolute;inset:0;z-index:5;width:100%;height:100%;min-height:100%;border:0;padding:0;margin:0;resize:none;overflow:hidden;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent;outline:none;box-shadow:none;font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;letter-spacing:-0.1px;word-break:keep-all;white-space:pre-wrap;appearance:none;-webkit-appearance:none;border-radius:0;opacity:.01;pointer-events:auto}
+.typing-input{position:absolute;inset:0;z-index:5;width:100%;height:100%;min-height:100%;border:0;padding:0;margin:0;resize:none;overflow:hidden;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent;outline:none;box-shadow:none;font-family:var(--fs);font-size:18px;font-weight:300;line-height:2.1;letter-spacing:-0.1px;word-break:keep-all;overflow-wrap:normal;white-space:pre-wrap;appearance:none;-webkit-appearance:none;border-radius:0;opacity:.01;pointer-events:auto}
 /* 완료 플래시 */
 @keyframes completeFlash{0%{background:rgba(26,24,20,0.06)}100%{background:transparent}}
 .typing-area.complete{animation:completeFlash 0.6s ease-out}
@@ -262,8 +262,8 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 .typing-guide::before{content:'✦';font-size:11px;margin-right:8px;color:var(--ink-3)}
 #main-page-1 .typing-wrap{margin:0;min-height:48dvh;padding:0;user-select:none}
 #main-page-1 .typing-ghost,
-#main-page-1 .typing-over{font-family:var(--fs);font-size:32px;font-weight:400;line-height:1.72;letter-spacing:-.7px;word-break:keep-all}
-#main-page-1 .typing-input{font-family:var(--fs);font-size:32px;font-weight:400;line-height:1.72;letter-spacing:-.7px;word-break:keep-all}
+#main-page-1 .typing-over{font-family:var(--fs);font-size:29px;font-weight:400;line-height:1.72;letter-spacing:-.7px;word-break:keep-all;overflow-wrap:normal;white-space:pre-wrap}
+#main-page-1 .typing-input{font-family:var(--fs);font-size:29px;font-weight:400;line-height:1.72;letter-spacing:-.7px;word-break:keep-all;overflow-wrap:normal;white-space:pre-wrap}
 #main-page-1 .typing-ghost{color:rgba(26,24,20,.17)}
 #main-page-1 .typing-over{color:var(--ink)}
 #main-page-1 .typing-progress-wrap{height:1px;margin:22px 0 0;background:rgba(26,24,20,.12)}
@@ -274,8 +274,8 @@ body{font-family:var(--ff);background:var(--paper);min-height:100vh;display:flex
 .t-cursor::after{background:#b49378;width:2px;height:1.05em;margin-left:3px}
 @media (max-width:420px){
   #main-page-1 .typing-ghost,
-  #main-page-1 .typing-over{font-size:29px;line-height:1.68;letter-spacing:-.6px}
-  #main-page-1 .typing-input{font-size:29px;line-height:1.68;letter-spacing:-.6px}
+  #main-page-1 .typing-over{font-size:26px;line-height:1.68;letter-spacing:-.6px}
+  #main-page-1 .typing-input{font-size:26px;line-height:1.68;letter-spacing:-.6px}
   #main-page-1 .typing-wrap{min-height:44dvh}
 }
 
@@ -1620,20 +1620,16 @@ function escapeHTML(v) {
 
 function renderTypingOver() {
   const over = document.getElementById('typing-over');
-  const target = typingTarget;
-  const typed = typingTyped;
-  let h = '';
-  for (let i = 0; i < typed.length; i++) {
-    const ch = typed[i];
-    const ok = typed[i] === target[i];
-    const display = ch === '\n' ? '<br>' : (ch === ' ' ? '&nbsp;' : escapeHTML(ch));
-    h += `<span class="t-${ok ? 'ok' : 'err'}">${display}</span>`;
+  const typed = typingTyped || '';
+  // 글자를 span으로 쪼개면 한글 단어 줄바꿈 기준이 ghost 레이어와 달라진다.
+  // 따라서 입력된 전체 문장을 하나의 텍스트 노드로 렌더링해 두 레이어의 줄바꿈을 동일하게 맞춘다.
+  over.innerHTML = '';
+  over.appendChild(document.createTextNode(typed));
+  if (typed.length < typingTarget.length) {
+    const cursor = document.createElement('span');
+    cursor.className = 't-cursor';
+    over.appendChild(cursor);
   }
-  // 커서
-  if (typed.length < target.length) {
-    h += '<span class="t-cursor"></span>';
-  }
-  over.innerHTML = h;
 }
 
 function updateProgress() {
